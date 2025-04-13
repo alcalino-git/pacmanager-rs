@@ -1,9 +1,9 @@
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc, sync::{Arc, Mutex}};
 
 mod logic;
 mod ui;
 
-use iced::widget::column;
+use iced::{widget::column, Task};
 use logic::server::Server;
 use ui::{package_card::PackageCardMessage, search::{SearchMessage, SearchWidget}};
 
@@ -15,7 +15,7 @@ enum AppMessage {
 
 #[derive(Clone, Debug)]
 struct MainUI {
-    server: Arc<RefCell<Server>>,
+    server: Arc<Mutex<Server>>,
     search: SearchWidget,
 }
 
@@ -23,15 +23,15 @@ impl Default for MainUI {
     fn default() -> Self {
         let server = Server::intialized().populate().check_installed();
         return Self {
-            server: Arc::new(RefCell::new(server.clone())),
-            search: SearchWidget {server: Arc::new(RefCell::new(server.clone())), ..Default::default()}
+            server: Arc::new(Mutex::new(server.clone())),
+            search: SearchWidget {server: Arc::new(Mutex::new(server.clone())), ..Default::default()}
         };
     }
 }
 
 impl MainUI {
-    fn update(&mut self, message: AppMessage) {
-        self.search.update(message);
+    fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
+        self.search.update(message)
     }
 
     fn view(&self) -> iced::widget::Column<AppMessage> {

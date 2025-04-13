@@ -1,11 +1,11 @@
 use rust_fuzzy_search::fuzzy_compare;
 
 use crate::logic::package::Package;
-use std::{cell::RefCell, collections::HashMap, process::Command, rc::Rc, sync::Arc};
+use std::{collections::HashMap, process::Command, rc::Rc, sync::{Arc, Mutex}};
 
 #[derive(Debug, Clone, Default)]
 pub struct Server {
-    packages: HashMap<String, Arc<RefCell<Package>>>,
+    packages: HashMap<String, Arc<Mutex<Package>>>,
 }
 
 impl Server {
@@ -22,19 +22,19 @@ impl Server {
             let name = line.split(" ").collect::<Vec<&str>>()[0].to_string();
             self.get_package(name)
                 .unwrap()
-                .borrow_mut()
+                .lock().unwrap()
                 .set_property("Installed".to_string(), "True".to_string());
         }
 
         for p in self.packages.keys() {
             let package = self.get_package(p.clone()).unwrap().clone();
             if package
-                .borrow()
+            	.lock().unwrap()
                 .get_property("Installed".to_string())
                 .is_none()
             {
                 package
-                    .borrow_mut()
+                	.lock().unwrap()
                     .set_property("Installed".to_string(), "False".to_string());
             }
         }
@@ -69,7 +69,7 @@ impl Server {
                 new_package
                     .get_property("Name".to_string())
                     .unwrap_or_default(),
-                Arc::new(RefCell::new(new_package)),
+                Arc::new(Mutex::new(new_package)),
             );
         }
 
@@ -78,26 +78,26 @@ impl Server {
         return self.clone();
     }
 
-    pub fn get_package(&self, name: String) -> Option<Arc<RefCell<Package>>> {
+    pub fn get_package(&self, name: String) -> Option<Arc<Mutex<Package>>> {
         match self.packages.get(name.clone().trim()) {
             Some(p) => Some(p.clone()),
             None => None,
         }
     }
 
-    pub fn search(&self, query: String) -> Vec<Arc<RefCell<Package>>> {
+    pub fn search(&self, query: String) -> Vec<Arc<Mutex<Package>>> {
     	println!("Querying database against: {}\n Server has {} packages", query, self.packages.keys().len());
         let mut result = self
             .packages
             .keys()
             .into_iter()
             .map(|k| self.get_package(k.to_string()).unwrap().clone())
-            .filter(|p| fuzzy_compare(&p.borrow().get_property("Name".to_string()).unwrap_or_default(), &query) > 0.10)
+            //.filter(|p| fuzzy_compare(&p.lock().unwrap().get_property("Name".to_string()).unwrap_or_default(), &query) > 0.10)
             .collect::<Vec<_>>();
 
         result.sort_by(|a, b| {
-        	let a_score = fuzzy_compare(&a.borrow().get_property("Name".to_string()).unwrap_or_default(), &query);
-        	let b_score = fuzzy_compare(&b.borrow().get_property("Name".to_string()).unwrap_or_default(), &query);
+        	let a_score = fuzzy_compare(&a.lock().unwrap().get_property("Name".to_string()).unwrap_or_default(), &query);
+        	let b_score = fuzzy_compare(&b.lock().unwrap().get_property("Name".to_string()).unwrap_or_default(), &query);
 
          	return b_score.total_cmp(&a_score.clone());
         });
@@ -118,7 +118,7 @@ fn test_server() {
     let linux = server.get_package("kseexpr".to_string()).unwrap();
     assert!(
         linux
-            .borrow()
+            .lock().unwrap()
             .get_property("Installed".to_string())
             .unwrap()
             == "False".to_string()

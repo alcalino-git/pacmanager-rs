@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc, sync::{Arc, Mutex}};
 
 use iced::widget::{Row, button, row, text};
 
@@ -6,7 +6,7 @@ use crate::{AppMessage, logic::package::Package};
 
 #[derive(Clone, Debug)]
 pub struct PackageCard {
-    pub package: Arc<RefCell<Package>>,
+    pub package: Arc<Mutex<Package>>,
 }
 
 #[derive(Clone, Debug)]
@@ -20,7 +20,7 @@ impl PackageCard {
     pub fn view(&self) -> iced::widget::Button<'static, AppMessage> {
         let name = iced::widget::text(
             self.package
-                .borrow()
+                .lock().unwrap()
                 .get_property("Name".to_string())
                 .unwrap_or_default()
                 .to_string(),
@@ -29,7 +29,7 @@ impl PackageCard {
         return button(row![name].spacing(10).padding(5))
             .width(iced::Length::Fill)
             .on_press(AppMessage::PackageListMessage(
-                PackageCardMessage::Selected(self.package.borrow().get_property("Name".to_string()).unwrap_or_default()),
+                PackageCardMessage::Selected(self.package.lock().unwrap().get_property("Name".to_string()).unwrap_or_default()),
             ));
     }
 }
