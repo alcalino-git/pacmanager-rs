@@ -1,11 +1,11 @@
 use rust_fuzzy_search::fuzzy_compare;
 
 use crate::logic::package::Package;
-use std::{cell::RefCell, collections::HashMap, process::Command, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, process::Command, rc::Rc, sync::Arc};
 
 #[derive(Debug, Clone, Default)]
 pub struct Server {
-    packages: HashMap<String, Rc<RefCell<Package>>>,
+    packages: HashMap<String, Arc<RefCell<Package>>>,
 }
 
 impl Server {
@@ -69,7 +69,7 @@ impl Server {
                 new_package
                     .get_property("Name".to_string())
                     .unwrap_or_default(),
-                Rc::new(RefCell::new(new_package)),
+                Arc::new(RefCell::new(new_package)),
             );
         }
 
@@ -78,14 +78,14 @@ impl Server {
         return self.clone();
     }
 
-    pub fn get_package(&self, name: String) -> Option<Rc<RefCell<Package>>> {
+    pub fn get_package(&self, name: String) -> Option<Arc<RefCell<Package>>> {
         match self.packages.get(name.clone().trim()) {
             Some(p) => Some(p.clone()),
             None => None,
         }
     }
 
-    pub fn search(&self, query: String) -> Vec<Rc<RefCell<Package>>> {
+    pub fn search(&self, query: String) -> Vec<Arc<RefCell<Package>>> {
     	println!("Querying database against: {}\n Server has {} packages", query, self.packages.keys().len());
         let mut result = self
             .packages

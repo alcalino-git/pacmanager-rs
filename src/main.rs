@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 mod logic;
 mod ui;
@@ -15,7 +15,7 @@ enum AppMessage {
 
 #[derive(Clone, Debug)]
 struct MainUI {
-    server: Rc<RefCell<Server>>,
+    server: Arc<RefCell<Server>>,
     search: SearchWidget,
 }
 
@@ -23,8 +23,8 @@ impl Default for MainUI {
     fn default() -> Self {
         let server = Server::intialized().populate().check_installed();
         return Self {
-            server: Rc::new(RefCell::new(server.clone())),
-            search: SearchWidget {server: Rc::new(RefCell::new(server.clone())), ..Default::default()}
+            server: Arc::new(RefCell::new(server.clone())),
+            search: SearchWidget {server: Arc::new(RefCell::new(server.clone())), ..Default::default()}
         };
     }
 }

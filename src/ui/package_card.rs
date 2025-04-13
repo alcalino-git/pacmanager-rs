@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use iced::widget::{Row, button, row, text};
 
@@ -6,12 +6,12 @@ use crate::{AppMessage, logic::package::Package};
 
 #[derive(Clone, Debug)]
 pub struct PackageCard {
-    pub package: Rc<RefCell<Package>>,
+    pub package: Arc<RefCell<Package>>,
 }
 
 #[derive(Clone, Debug)]
 pub enum PackageCardMessage {
-    Selected(Rc<RefCell<Package>>),
+    Selected(String),
 }
 
 impl PackageCard {
@@ -29,7 +29,7 @@ impl PackageCard {
         return button(row![name].spacing(10).padding(5))
             .width(iced::Length::Fill)
             .on_press(AppMessage::PackageListMessage(
-                PackageCardMessage::Selected(self.package.clone()),
+                PackageCardMessage::Selected(self.package.borrow().get_property("Name".to_string()).unwrap_or_default()),
             ));
     }
 }

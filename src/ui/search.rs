@@ -1,6 +1,7 @@
 use iced::widget::{Column, Scrollable, column, scrollable};
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::AppMessage;
 use crate::logic::server::Server;
@@ -10,7 +11,7 @@ const PAGE_SIZE: usize = 100;
 
 #[derive(Default, Debug, Clone)]
 pub struct SearchWidget {
-    pub server: Rc<RefCell<Server>>,
+    pub server: Arc<RefCell<Server>>,
     pub search: String,
     pub packages: Vec<PackageCard>,
 }
