@@ -18,7 +18,7 @@ pub struct PackageButton {
 
 #[derive(Clone, Debug)]
 pub enum PackageCardMessage {
-    Selected(String),
+    Selected(Arc<Mutex<Package>>),
 }
 
 impl PackageButton {
@@ -52,14 +52,8 @@ impl PackageButton {
 
         return button(row![name, iced::widget::horizontal_space().width(iced::Length::Fill), icon].spacing(10).padding(5))
             .width(iced::Length::Fill)
-            .on_press(AppMessage::PackageListMessage(
-                PackageCardMessage::Selected(
-                    self.package
-                        .lock()
-                        .unwrap()
-                        .get_property("Name".to_string())
-                        .unwrap_or_default(),
-                ),
+            .on_press(AppMessage::PackageCardMessage(
+                PackageCardMessage::Selected(self.package.clone()),
             ));
     }
 }
