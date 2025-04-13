@@ -40,6 +40,6 @@ impl MainUI {
 }
 
 fn main() -> iced::Result {
-	//TODO: Use Arc instead of RC
+	//TODO: Use mutex instead of RefCell
     iced::application("Pacmanager", MainUI::update, MainUI::view).run()
 }

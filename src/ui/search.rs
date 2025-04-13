@@ -23,18 +23,23 @@ pub enum SearchMessage {
 }
 
 impl SearchWidget {
+	pub fn handle_search(&self) -> Vec<PackageCard> {
+		let packages: Vec<PackageCard> = self
+	                    .server
+	                    .borrow()
+	                    .search(self.search.clone())
+	                    .into_iter()
+	                    .map(|x| PackageCard { package: x.clone() })
+	                    .collect();
+		return packages
+	}
+
     pub fn update(&mut self, message: AppMessage) {
         match message {
             AppMessage::SearchMessage(m) => match m {
                 SearchMessage::SearchChanged(s) => self.search = s,
                 SearchMessage::SearchSubmited => {
-                    self.packages = self
-                        .server
-                        .borrow()
-                        .search(self.search.clone())
-                        .into_iter()
-                        .map(|x| PackageCard { package: x.clone() })
-                        .collect();
+                    self.packages = self.handle_search()
                 }
             },
             _ => {}
