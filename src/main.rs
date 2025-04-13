@@ -5,11 +5,12 @@ mod ui;
 
 use iced::widget::column;
 use logic::server::Server;
-use ui::search::{SearchMessage, SearchWidget};
+use ui::{package_card::PackageCardMessage, search::{SearchMessage, SearchWidget}};
 
 #[derive(Debug, Clone)]
 enum AppMessage {
     SearchMessage(SearchMessage),
+    PackageListMessage(PackageCardMessage)
 }
 
 #[derive(Clone, Debug)]
@@ -39,5 +40,6 @@ impl MainUI {
 }
 
 fn main() -> iced::Result {
+	//TODO: Use Arc instead of RC
     iced::application("Pacmanager", MainUI::update, MainUI::view).run()
 }

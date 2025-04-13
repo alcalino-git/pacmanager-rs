@@ -1,10 +1,12 @@
-use iced::widget::{Column, column};
+use iced::widget::{Column, Scrollable, column, scrollable};
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::AppMessage;
 use crate::logic::server::Server;
 use crate::ui::package_card::PackageCard;
+
+const PAGE_SIZE: usize = 100;
 
 #[derive(Default, Debug, Clone)]
 pub struct SearchWidget {
@@ -16,7 +18,7 @@ pub struct SearchWidget {
 #[derive(Debug, Clone)]
 pub enum SearchMessage {
     SearchChanged(String),
-    SearchSubmited
+    SearchSubmited,
 }
 
 impl SearchWidget {
@@ -25,26 +27,34 @@ impl SearchWidget {
             AppMessage::SearchMessage(m) => match m {
                 SearchMessage::SearchChanged(s) => self.search = s,
                 SearchMessage::SearchSubmited => {
-	                self.packages = self
-	                    .server
-	                    .borrow()
-	                    .search(self.search.clone())
-	                    .into_iter()
-	                    .map(|x|  PackageCard {package: x.clone()} )
-	                    .collect();
+                    self.packages = self
+                        .server
+                        .borrow()
+                        .search(self.search.clone())
+                        .into_iter()
+                        .map(|x| PackageCard { package: x.clone() })
+                        .collect();
                 }
             },
+            _ => {}
         }
     }
 
     pub fn view(&self) -> Column<AppMessage> {
-
-    	let packages = column(self.packages.clone().into_iter().map(|x| x.view()).collect::<Vec<_>>());
+        let packages = scrollable(column(
+            self.packages
+                .clone()
+                .into_iter()
+                .map(|x| x.view())
+                .map(|x| iced::Element::from(x))
+                .collect::<Vec<_>>(),
+        ).spacing(10)).width(iced::Length::Fill);
+        //TODO: Implement paging so that app doesn't slow down
 
         column![
             iced::widget::text_input("search", &self.search)
                 .on_input(|x| AppMessage::SearchMessage(SearchMessage::SearchChanged(x)))
-               	.on_submit(AppMessage::SearchMessage(SearchMessage::SearchSubmited)),
+                .on_submit(AppMessage::SearchMessage(SearchMessage::SearchSubmited)),
             packages
         ]
     }
