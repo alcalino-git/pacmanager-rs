@@ -128,6 +128,6 @@ impl SearchWidget {
                 button(">").on_press(AppMessage::SearchMessage(SearchMessage::PageUp)),
             ],
             packages_display
-        ]
+        ].spacing(10)
     }
 }

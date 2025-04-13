@@ -1,8 +1,15 @@
-use std::{cell::RefCell, rc::Rc, sync::{Arc, Mutex}};
-
-use iced::widget::{Row, button, row, text};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 
 use crate::{AppMessage, logic::package::Package};
+use iced::{
+    Theme,
+    widget::{Row, button, row, text},
+};
+use iced_aw::{Badge, style};
 
 #[derive(Clone, Debug)]
 pub struct PackageCard {
@@ -20,16 +27,39 @@ impl PackageCard {
     pub fn view(&self) -> iced::widget::Button<'static, AppMessage> {
         let name = iced::widget::text(
             self.package
-                .lock().unwrap()
+                .lock()
+                .unwrap()
                 .get_property("Name".to_string())
                 .unwrap_or_default()
                 .to_string(),
         );
 
-        return button(row![name].spacing(10).padding(5))
+        let installed = self
+            .package
+            .lock()
+            .unwrap()
+            .get_property("Installed".to_string())
+            .unwrap()
+            == "True".to_string();
+
+        let icon: Badge<AppMessage> = iced_aw::badge(if installed {
+            "Installed"
+        } else {
+            "Not installed"
+        })
+        .align_x(iced::Alignment::End)
+        .style(if installed {style::badge::success} else {style::badge::warning});
+
+        return button(row![name, iced::widget::horizontal_space().width(iced::Length::Fill), icon].spacing(10).padding(5))
             .width(iced::Length::Fill)
             .on_press(AppMessage::PackageListMessage(
-                PackageCardMessage::Selected(self.package.lock().unwrap().get_property("Name".to_string()).unwrap_or_default()),
+                PackageCardMessage::Selected(
+                    self.package
+                        .lock()
+                        .unwrap()
+                        .get_property("Name".to_string())
+                        .unwrap_or_default(),
+                ),
             ));
     }
 }
