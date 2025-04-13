@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::AppMessage;
 use crate::logic::server::Server;
-use crate::ui::package_card::PackageCard;
+use crate::ui::package_button::PackageButton;
 
 const PAGE_SIZE: usize = 100;
 
@@ -16,7 +16,7 @@ const PAGE_SIZE: usize = 100;
 pub struct SearchWidget {
     pub server: Arc<Mutex<Server>>,
     pub search: String,
-    pub packages: Vec<PackageCard>,
+    pub packages: Vec<PackageButton>,
     pub loading: bool,
     pub page: i32,
 }
@@ -25,7 +25,7 @@ pub struct SearchWidget {
 pub enum SearchMessage {
     SearchChanged(String),
     SearchSubmited,
-    SearchFinished(Vec<PackageCard>),
+    SearchFinished(Vec<PackageButton>),
     PageUp,
     PageDown,
 }
@@ -35,14 +35,14 @@ impl SearchWidget {
         return (self.packages.len() / PAGE_SIZE) as i32;
     }
 
-    pub fn handle_search(&self) -> Vec<PackageCard> {
-        let packages: Vec<PackageCard> = self
+    pub fn handle_search(&self) -> Vec<PackageButton> {
+        let packages: Vec<PackageButton> = self
             .server
             .lock()
             .unwrap()
             .search(self.search.clone())
             .into_iter()
-            .map(|x| PackageCard { package: x.clone() })
+            .map(|x| PackageButton { package: x.clone() })
             .collect();
         return packages;
     }
@@ -116,7 +116,6 @@ impl SearchWidget {
             )
         };
 
-        //TODO: Implement paging so that app doesn't slow down
 
         column![
             row![

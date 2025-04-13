@@ -1,2 +1,2 @@
 pub mod search;
-pub mod package_card;
+pub mod package_button;

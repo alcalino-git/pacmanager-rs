@@ -5,7 +5,7 @@ mod ui;
 
 use iced::{widget::column, Task};
 use logic::server::Server;
-use ui::{package_card::PackageCardMessage, search::{SearchMessage, SearchWidget}};
+use ui::{package_button::PackageCardMessage, search::{SearchMessage, SearchWidget}};
 
 #[derive(Debug, Clone)]
 enum AppMessage {

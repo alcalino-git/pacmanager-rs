@@ -12,7 +12,7 @@ use iced::{
 use iced_aw::{Badge, style};
 
 #[derive(Clone, Debug)]
-pub struct PackageCard {
+pub struct PackageButton {
     pub package: Arc<Mutex<Package>>,
 }
 
@@ -21,7 +21,7 @@ pub enum PackageCardMessage {
     Selected(String),
 }
 
-impl PackageCard {
+impl PackageButton {
     fn update(&mut self, message: AppMessage) {}
 
     pub fn view(&self) -> iced::widget::Button<'static, AppMessage> {
