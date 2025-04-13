@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 iced = "0.13.1"
+iced_aw = {version = "0.12.2", features = ["spinner"]}
 rust-fuzzy-search = "0.1.1"
