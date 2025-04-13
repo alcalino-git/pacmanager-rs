@@ -1,5 +1,5 @@
 use iced::Task;
-use iced::widget::{Column, Scrollable, column, scrollable};
+use iced::widget::{Column, Row, Scrollable, button, column, row, scrollable, Text, text};
 use iced_aw::{Spinner, spinner};
 use std::cell::RefCell;
 use std::process::Command;
@@ -18,6 +18,7 @@ pub struct SearchWidget {
     pub search: String,
     pub packages: Vec<PackageCard>,
     pub loading: bool,
+    pub page: i32,
 }
 
 #[derive(Debug, Clone)]
@@ -25,9 +26,15 @@ pub enum SearchMessage {
     SearchChanged(String),
     SearchSubmited,
     SearchFinished(Vec<PackageCard>),
+    PageUp,
+    PageDown,
 }
 
 impl SearchWidget {
+    fn get_total_pages(&self) -> i32 {
+        return (self.packages.len() / PAGE_SIZE) as i32;
+    }
+
     pub fn handle_search(&self) -> Vec<PackageCard> {
         let packages: Vec<PackageCard> = self
             .server
@@ -51,6 +58,7 @@ impl SearchWidget {
                     let this = self.clone();
                     self.loading = true;
                     self.packages.clear();
+                    self.page = 0;
                     println!("Search started");
                     return iced::Task::perform(async move { this.handle_search() }, |p| {
                         AppMessage::SearchMessage(SearchMessage::SearchFinished(p))
@@ -62,6 +70,20 @@ impl SearchWidget {
                     self.loading = false;
                     iced::Task::none()
                 }
+                SearchMessage::PageUp => {
+                    self.page += 1;
+                    if self.page > self.get_total_pages() {
+                        self.page = 0
+                    };
+                    Task::none()
+                }
+                SearchMessage::PageDown => {
+                    self.page -= 1;
+                    if self.page < 0 {
+                        self.page = self.get_total_pages()
+                    };
+                    Task::none()
+                }
             },
             _ => iced::Task::none(),
         }
@@ -70,7 +92,8 @@ impl SearchWidget {
     pub fn view(&self) -> Column<AppMessage> {
         let packages = scrollable(
             column(
-                self.packages[0..std::cmp::min(100, self.packages.len())]
+                self.packages[std::cmp::min((self.page as usize * PAGE_SIZE), self.packages.len())
+                    ..std::cmp::min(((self.page + 1) as usize * PAGE_SIZE), self.packages.len())]
                     .to_vec()
                     .clone()
                     .into_iter()
@@ -88,16 +111,22 @@ impl SearchWidget {
             iced::Element::from(
                 Spinner::new()
                     .width(iced::Length::Fill)
-                    .height(iced::Length::Fill).circle_radius(20.0),
+                    .height(iced::Length::Fill)
+                    .circle_radius(20.0),
             )
         };
 
         //TODO: Implement paging so that app doesn't slow down
 
         column![
-            iced::widget::text_input("search", &self.search)
-                .on_input(|x| AppMessage::SearchMessage(SearchMessage::SearchChanged(x)))
-                .on_submit(AppMessage::SearchMessage(SearchMessage::SearchSubmited)),
+            row![
+                iced::widget::text_input("search", &self.search)
+                    .on_input(|x| AppMessage::SearchMessage(SearchMessage::SearchChanged(x)))
+                    .on_submit(AppMessage::SearchMessage(SearchMessage::SearchSubmited)),
+                button("<").on_press(AppMessage::SearchMessage(SearchMessage::PageDown)),
+                text(format!("{}/{}", self.page, self.get_total_pages())),
+                button(">").on_press(AppMessage::SearchMessage(SearchMessage::PageUp)),
+            ],
             packages_display
         ]
     }
