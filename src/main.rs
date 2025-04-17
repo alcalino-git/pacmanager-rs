@@ -44,6 +44,7 @@ impl Default for MainUI {
             view: PackageDisplay {
                 server: Arc::new(Mutex::new(server.clone())),
                 package: None,
+                loading: false
             },
         };
     }

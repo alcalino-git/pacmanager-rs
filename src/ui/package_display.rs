@@ -24,15 +24,27 @@ pub enum PackageViewMessage {
 pub struct PackageDisplay {
     pub server: Arc<Mutex<Server>>,
     pub package: Option<Arc<Mutex<Package>>>,
+    pub loading: bool,
 }
 
 impl PackageDisplay {
     fn handle_operation(&self, operation: PackageViewMessage) -> bool {
+        let package_name = self
+            .clone()
+            .package
+            .unwrap()
+            .lock()
+            .unwrap()
+            .get_property("Name".to_string())
+            .unwrap_or_default();
+        if (package_name.len() == 0) {
+            return false;
+        }
         return match operation {
             PackageViewMessage::Install(p) | PackageViewMessage::Update(p) => {
-                p.clone().lock().unwrap().install_or_update()
+                Package::install_or_update(package_name)
             }
-            PackageViewMessage::Uninstall(p) => p.clone().lock().unwrap().uninstall(),
+            PackageViewMessage::Uninstall(p) => Package::uninstall(package_name),
             _ => {
                 unreachable!()
             }
@@ -49,6 +61,7 @@ impl PackageDisplay {
                 PackageViewMessage::Update(_)
                 | PackageViewMessage::Install(_)
                 | PackageViewMessage::Uninstall(_) => {
+                    self.loading = true;
                     let this = self.clone();
                     let package = this.package.clone().unwrap();
                     iced::Task::perform(
@@ -62,7 +75,8 @@ impl PackageDisplay {
                     )
                 }
                 PackageViewMessage::Finished(_, package) => {
-                	package.lock().unwrap().sync_installed();
+                    package.lock().unwrap().sync_installed();
+                    self.loading = false;
                     Task::none()
                 }
             },
@@ -83,19 +97,24 @@ impl PackageDisplay {
             == "True".to_string();
 
         let install_button =
-            button(if installed { "Uninstall" } else { "Install" }).on_press(if installed {
-                AppMessage::PackageViewMessage(PackageViewMessage::Uninstall(
-                    self.package.clone().unwrap_or_default(),
-                ))
-            } else {
-                AppMessage::PackageViewMessage(PackageViewMessage::Install(
-                    self.package.clone().unwrap_or_default(),
-                ))
-            });
+            button(if installed { "Uninstall" } else { "Install" }).on_press_maybe(
+            	if self.loading == false {
+		           	if installed {
+		                Some (AppMessage::PackageViewMessage(PackageViewMessage::Uninstall(
+		                    self.package.clone().unwrap_or_default(),
+		                )))
+		            } else {
+		                Some (AppMessage::PackageViewMessage(PackageViewMessage::Install(
+		                    self.package.clone().unwrap_or_default(),
+		                )))
+		            }
+             	} else {None}
 
-        let update_button = button("Update").on_press(AppMessage::PackageViewMessage(
-            PackageViewMessage::Update(self.package.clone().unwrap_or_default()),
-        ));
+            );
+
+        let update_button = button("Update").on_press_maybe(if self.loading == false {
+        	Some(AppMessage::PackageViewMessage(PackageViewMessage::Update(self.package.clone().unwrap_or_default())))
+        } else {None});
 
         return column![
             row![

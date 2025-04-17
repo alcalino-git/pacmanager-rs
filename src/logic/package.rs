@@ -41,36 +41,28 @@ impl Package {
         return Package { properties: props };
     }
 
-    pub fn install_or_update(&self) -> bool {
-    	println!("Attempting to update or install {}", self.get_property("Name".to_string()).unwrap_or_default());
-     	let installed = self.get_property("Installed".to_string()).unwrap() == "True".to_string();
+    pub fn install_or_update(name: String) -> bool {
+    	println!("Attempting to update or install {}", name);
 
-        if (self.get_property("Name".to_string())).is_none() {
-            return installed;
-        }
-        let payload = format!("pkexec pacman -Syy {} --noconfirm", self.get_property("Name".to_string()).unwrap_or_default());
+        let payload = format!("pkexec pacman -Syy {} --noconfirm", name);
 
         let command = std::process::Command::new("sh")
             .arg("-c")
             .arg(payload)
             .output();
-        return if command.is_ok() {true} else {installed}
+        return true
     }
 
-    pub fn uninstall(&self) -> bool {
-    	println!("Attempting to uninstall {}", self.get_property("Name".to_string()).unwrap_or_default());
-     	let installed = self.get_property("Installed".to_string()).unwrap() == "True".to_string();
-        if (self.get_property("Name".to_string())).is_none() {
-            return installed;
-        }
+    pub fn uninstall(name: String) -> bool {
+    	println!("Attempting to uninstall {}", name);
 
-        let payload = format!("pkexec pacman -R {} --noconfirm", self.get_property("Name".to_string()).unwrap_or_default());
+        let payload = format!("pkexec pacman -R {} --noconfirm", name);
 
         let command = std::process::Command::new("sh")
             .arg("-c")
             .arg(payload)
             .output();
-        return if command.is_ok() {false} else {installed};
+        return true;
     }
 
     //Makes a call to the OS package manager to sync the in-memory package with the real one
