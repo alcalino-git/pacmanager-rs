@@ -14,7 +14,7 @@ use iced::{
 use logic::{package::Package, server::Server};
 use ui::{
     package_button::PackageCardMessage,
-    package_display::PackageDisplay,
+    package_display::{PackageDisplay, PackageViewMessage},
     search::{SearchMessage, SearchWidget},
 };
 
@@ -22,6 +22,7 @@ use ui::{
 enum AppMessage {
     SearchMessage(SearchMessage),
     PackageCardMessage(PackageCardMessage),
+    PackageViewMessage(PackageViewMessage)
 }
 
 #[derive(Clone, Debug)]
@@ -49,10 +50,10 @@ impl Default for MainUI {
 }
 
 impl MainUI {
-    fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
-    	self.view.update(message.clone());
-        Task::none()
-        	.chain(self.search.update(message.clone()))
+	fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
+
+        Task::batch(vec![self.view.update(message.clone()), self.search.update(message.clone())])
+
     }
 
     fn view(&self) -> iced::widget::Row<AppMessage> {
