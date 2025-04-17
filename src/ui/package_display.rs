@@ -96,25 +96,34 @@ impl PackageDisplay {
             .unwrap_or_default()
             == "True".to_string();
 
-        let install_button =
-            button(if installed { "Uninstall" } else { "Install" }).on_press_maybe(
-            	if self.loading == false {
-		           	if installed {
-		                Some (AppMessage::PackageViewMessage(PackageViewMessage::Uninstall(
-		                    self.package.clone().unwrap_or_default(),
-		                )))
-		            } else {
-		                Some (AppMessage::PackageViewMessage(PackageViewMessage::Install(
-		                    self.package.clone().unwrap_or_default(),
-		                )))
-		            }
-             	} else {None}
-
-            );
+        let install_button = button(if installed { "Uninstall" } else { "Install" })
+            .on_press_maybe(if self.loading == false {
+                if installed {
+                    Some(AppMessage::PackageViewMessage(
+                        PackageViewMessage::Uninstall(self.package.clone().unwrap_or_default()),
+                    ))
+                } else {
+                    Some(AppMessage::PackageViewMessage(PackageViewMessage::Install(
+                        self.package.clone().unwrap_or_default(),
+                    )))
+                }
+            } else {
+                None
+            });
 
         let update_button = button("Update").on_press_maybe(if self.loading == false {
-        	Some(AppMessage::PackageViewMessage(PackageViewMessage::Update(self.package.clone().unwrap_or_default())))
-        } else {None});
+            Some(AppMessage::PackageViewMessage(PackageViewMessage::Update(
+                self.package.clone().unwrap_or_default(),
+            )))
+        } else {
+            None
+        });
+
+        let spinner = if self.loading {
+        	iced::Element::from( iced_aw::Spinner::new() )
+        } else {
+        	iced::Element::new(iced::widget::horizontal_space())
+        };
 
         return column![
             row![
@@ -165,7 +174,7 @@ impl PackageDisplay {
                         .unwrap_or_default()
                 )
             ],
-            row![install_button, update_button].spacing(10)
+            row![install_button, update_button, spinner].spacing(10),
         ]
         .spacing(20)
         .width(iced::Length::Fill);
