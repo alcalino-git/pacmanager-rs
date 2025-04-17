@@ -20,6 +20,7 @@ impl Server {
 
         for line in installed.split("\n") {
             let name = line.split(" ").collect::<Vec<&str>>()[0].to_string();
+            if name.len() == 0 {continue;;}
             self.get_package(name)
                 .unwrap()
                 .lock().unwrap()
@@ -54,7 +55,7 @@ impl Server {
 
         for line in pacman.split("\n") {
             if line.len() == 0 {
-                packages_raw.push(curr_package.clone());
+                if curr_package.len() > 0 {packages_raw.push(curr_package.clone())};
                 curr_package.clear();
                 continue;
             }
