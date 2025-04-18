@@ -19,7 +19,7 @@ pub enum PackageViewMessage {
     Update(Arc<Mutex<Package>>),
     SystemUpdate,
     Finished(String, Arc<Mutex<Package>>),
-    FinishedSystemUpdate,
+    FinishedSystemUpdate(String),
 }
 
 #[derive(Debug, Clone)]
@@ -79,8 +79,10 @@ impl PackageDisplay {
                 }
                 PackageViewMessage::Finished(stderror, package) => {
                 	if stderror.len() != 0 {
-                 		native_dialog::MessageDialog::new().set_text(&stderror).set_title("An error has ocurred :(").show_alert();
-                 	}
+                 		let _ = native_dialog::MessageDialog::new().set_text(&stderror).set_title("An error has ocurred :(").show_alert();
+                 	} else {
+                  		let _ = native_dialog::MessageDialog::new().set_title("Operation finished succesfully").set_text("No errors were reported").show_alert();
+                  	}
                     package.lock().unwrap().sync_installed();
                     package.lock().unwrap().sync_all();
                     self.loading = false;
@@ -92,14 +94,19 @@ impl PackageDisplay {
 
                     return iced::Task::perform(
                         async move {
-                            this.server.lock().unwrap().clone().system_update();
+                            this.server.lock().unwrap().clone().system_update()
                         },
-                        |_| {
-                            AppMessage::PackageViewMessage(PackageViewMessage::FinishedSystemUpdate)
+                        |stderror| {
+                            AppMessage::PackageViewMessage(PackageViewMessage::FinishedSystemUpdate(stderror))
                         },
                     );
                 }
-                PackageViewMessage::FinishedSystemUpdate => {
+                PackageViewMessage::FinishedSystemUpdate(stderror) => {
+               		if stderror.len() != 0 {
+                		let _ = native_dialog::MessageDialog::new().set_text(&stderror).set_title("An error has ocurred :(").show_alert();
+                	} else {
+                 		let _ = native_dialog::MessageDialog::new().set_title("Update finished succesfully").set_text("No errors were reported").show_alert();
+                 	}
                     self.loading = false;
                     Task::none()
                 }
