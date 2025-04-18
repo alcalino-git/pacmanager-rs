@@ -1,6 +1,6 @@
 use iced::Task;
-use iced::widget::{Column, Row, Scrollable, button, column, row, scrollable, Text, text};
-use iced_aw::{Spinner, spinner};
+use iced::widget::{Column, Row, Scrollable, Text, button, column, row, scrollable, text};
+use iced_aw::{SelectionList, Spinner, spinner};
 use std::cell::RefCell;
 use std::process::Command;
 use std::rc::Rc;
@@ -19,13 +19,33 @@ pub struct SearchWidget {
     pub packages: Vec<PackageButton>,
     pub loading: bool,
     pub page: i32,
+    pub filter: FilterState,
+    pub sorter: SorterState,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Copy)]
+pub enum SorterState {
+    #[default]
+    Default,
+    InstallSize,
+    InstallDate,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Copy)]
+pub enum FilterState {
+    #[default]
+    All,
+    Installed,
+    NotInstalled,
+}
+
+#[derive(Debug, Clone,)]
 pub enum SearchMessage {
     SearchChanged(String),
     SearchSubmited,
     SearchFinished(Vec<PackageButton>),
+    FilterChanged(FilterState),
+    SorterChanged(SorterState),
     PageUp,
     PageDown,
 }
@@ -42,6 +62,11 @@ impl SearchWidget {
             .unwrap()
             .search(self.search.clone())
             .into_iter()
+            .filter(|x| {match self.filter {
+            	FilterState::All => true,
+             	FilterState::Installed => x.lock().unwrap().get_property("Installed".to_string()).unwrap() == "True".to_string(),
+              	FilterState::NotInstalled => x.lock().unwrap().get_property("Installed".to_string()).unwrap() != "True".to_string()
+            }})
             .map(|x| PackageButton { package: x.clone() })
             .collect();
         return packages;
@@ -83,6 +108,15 @@ impl SearchWidget {
                         self.page = self.get_total_pages()
                     };
                     Task::none()
+                },
+
+                SearchMessage::FilterChanged(s) => {
+               		self.filter = s;
+                 	self.update(AppMessage::SearchMessage(SearchMessage::SearchSubmited))
+                },
+                SearchMessage::SorterChanged(s) => {
+                	self.sorter = s;
+                	self.update(AppMessage::SearchMessage(SearchMessage::SearchSubmited))
                 }
             },
             _ => iced::Task::none(),
@@ -116,6 +150,17 @@ impl SearchWidget {
             )
         };
 
+        let filter_selector = row![
+        	iced::widget::radio("All", FilterState::All, Some(self.filter), |state| AppMessage::SearchMessage(SearchMessage::FilterChanged(state))),
+         	iced::widget::radio("Installed", FilterState::Installed, Some(self.filter), |state| AppMessage::SearchMessage(SearchMessage::FilterChanged(state))),
+          	iced::widget::radio("Not Installed", FilterState::NotInstalled, Some(self.filter), |state| AppMessage::SearchMessage(SearchMessage::FilterChanged(state)))
+        ].spacing(5);
+
+        let sorter_selector = row![
+        	iced::widget::radio("Default", SorterState::Default, Some(self.sorter), |state| AppMessage::SearchMessage(SearchMessage::SorterChanged(state))),
+         	iced::widget::radio("Size", SorterState::InstallSize, Some(self.sorter), |state| AppMessage::SearchMessage(SearchMessage::SorterChanged(state))),
+         	iced::widget::radio("Date", SorterState::InstallDate, Some(self.sorter), |state| AppMessage::SearchMessage(SearchMessage::SorterChanged(state))),
+        ].spacing(5);
 
         column![
             row![
@@ -126,7 +171,9 @@ impl SearchWidget {
                 text(format!("{}/{}", self.page, self.get_total_pages())),
                 button(">").on_press(AppMessage::SearchMessage(SearchMessage::PageUp)),
             ],
+            column![row![text("Filter by: "),filter_selector], row![text("Sort by: "), sorter_selector]].spacing(5),
             packages_display
-        ].spacing(10)
+        ]
+        .spacing(10)
     }
 }

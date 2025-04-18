@@ -93,7 +93,7 @@ impl Server {
             .keys()
             .into_iter()
             .map(|k| self.get_package(k.to_string()).unwrap().clone())
-            //.filter(|p| fuzzy_compare(&p.lock().unwrap().get_property("Name".to_string()).unwrap_or_default(), &query) > 0.10)
+            .filter(|p| fuzzy_compare(&p.lock().unwrap().get_property("Name".to_string()).unwrap_or_default(), &query) > 0.005 || query.len() == 0)
             .collect::<Vec<_>>();
 
         result.sort_by(|a, b| {

@@ -5,5 +5,5 @@ edition = "2024"
 
 [dependencies]
 iced = {version = "0.13.1", features = ["image"]}
-iced_aw = {version = "0.12.2", features = ["spinner", "badge"]}
+iced_aw = {version = "0.12.2", features = ["spinner", "badge", "selection_list"]}
 rust-fuzzy-search = "0.1.1"
