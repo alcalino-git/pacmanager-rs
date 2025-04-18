@@ -1,7 +1,11 @@
 use rust_fuzzy_search::fuzzy_compare;
 
 use crate::logic::package::Package;
-use std::{collections::HashMap, process::Command, sync::{Arc, Mutex}};
+use std::{
+    collections::HashMap,
+    process::Command,
+    sync::{Arc, Mutex},
+};
 
 #[derive(Debug, Clone, Default)]
 pub struct Server {
@@ -20,22 +24,27 @@ impl Server {
 
         for line in installed.split("\n") {
             let name = line.split(" ").collect::<Vec<&str>>()[0].to_string();
-            if name.len() == 0 {continue;;}
+            if name.len() == 0 {
+                continue;
+            }
             self.get_package(name)
                 .unwrap()
-                .lock().unwrap()
+                .lock()
+                .unwrap()
                 .set_property("Installed".to_string(), "True".to_string());
         }
 
         for p in self.packages.keys() {
             let package = self.get_package(p.clone()).unwrap().clone();
             if package
-            	.lock().unwrap()
+                .lock()
+                .unwrap()
                 .get_property("Installed".to_string())
                 .is_none()
             {
                 package
-                	.lock().unwrap()
+                    .lock()
+                    .unwrap()
                     .set_property("Installed".to_string(), "False".to_string());
             }
         }
@@ -55,7 +64,9 @@ impl Server {
 
         for line in pacman.split("\n") {
             if line.len() == 0 {
-                if curr_package.len() > 0 {packages_raw.push(curr_package.clone())};
+                if curr_package.len() > 0 {
+                    packages_raw.push(curr_package.clone())
+                };
                 curr_package.clear();
                 continue;
             }
@@ -87,29 +98,40 @@ impl Server {
     }
 
     pub fn search(&self, query: String) -> Vec<Arc<Mutex<Package>>> {
-    	println!("Querying database against: \"{}\"\n Server has {} packages", query, self.packages.keys().len());
-        let mut result = self
-            .packages
-            .keys()
-            .into_iter()
-            .map(|k| self.get_package(k.to_string()).unwrap().clone())
-            .filter(|p| fuzzy_compare(&p.lock().unwrap().get_property("Name".to_string()).unwrap_or_default(), &query) > 0.005 || query.len() == 0)
-            .collect::<Vec<_>>();
+        println!(
+            "Querying database against: \"{}\"\n Server has {} packages",
+            query,
+            self.packages.keys().len()
+        );
+
+        let pacman_search = String::from_utf8(
+            std::process::Command::new("pacman")
+                .arg("-Ss")
+                .output()
+                .unwrap()
+                .stdout,
+        )
+        .unwrap();
 
         //Its best to move this outside the function to avoid deadlocks
-        result.sort_by(|a, b| {
-        	let a_score = fuzzy_compare(&a.lock().unwrap().get_property("Name".to_string()).unwrap_or_default(), &query);
-        	let b_score = fuzzy_compare(&b.lock().unwrap().get_property("Name".to_string()).unwrap_or_default(), &query);
-
-         	return b_score.total_cmp(&a_score.clone());
-        });
-        //println!("Server is done searching and sorting, returning...");
+        let result = pacman_search
+            .split("\n")
+            .clone()
+            .into_iter()
+            .filter(|x| x.contains("/"))
+            .map(|x| x.split("/").collect::<Vec<_>>()[1].split(" ").collect::<Vec<_>>()[0])
+            .filter(|x| self.get_package(x.to_string()).is_some())
+            .map(|x| self.get_package(x.to_string()).unwrap())
+            .collect::<Vec<Arc<Mutex<Package>>>>();
 
         return result;
     }
 
     pub fn system_update(&mut self) {
-    	let _ = std::process::Command::new("sh").arg("-c").arg("pkexec pacman -Syu --noconfirm").output();
+        let _ = std::process::Command::new("sh")
+            .arg("-c")
+            .arg("pkexec pacman -Syu --noconfirm")
+            .output();
     }
 }
 
@@ -125,7 +147,8 @@ fn test_server() {
     let linux = server.get_package("kseexpr".to_string()).unwrap();
     assert!(
         linux
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .get_property("Installed".to_string())
             .unwrap()
             == "False".to_string()
