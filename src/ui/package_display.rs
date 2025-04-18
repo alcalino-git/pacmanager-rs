@@ -17,7 +17,9 @@ pub enum PackageViewMessage {
     Install(Arc<Mutex<Package>>),
     Uninstall(Arc<Mutex<Package>>),
     Update(Arc<Mutex<Package>>),
+    SystemUpdate,
     Finished(bool, Arc<Mutex<Package>>),
+    FinishedSystemUpdate,
 }
 
 #[derive(Debug, Clone)]
@@ -79,17 +81,35 @@ impl PackageDisplay {
                     self.loading = false;
                     Task::none()
                 }
+                PackageViewMessage::SystemUpdate => {
+                    self.loading = true;
+                    let this = self.clone();
+
+                    return iced::Task::perform(
+                        async move {
+                            this.server.lock().unwrap().clone().system_update();
+                        },
+                        |_| {
+                            AppMessage::PackageViewMessage(PackageViewMessage::FinishedSystemUpdate)
+                        },
+                    );
+                }
+                PackageViewMessage::FinishedSystemUpdate => {
+                    self.loading = false;
+                    Task::none()
+                }
             },
             _ => iced::Task::none(),
         }
     }
 
     pub fn view(&self) -> iced::widget::Column<AppMessage> {
-        if self.package.is_none() {
-            return column![text("No package selected")];
-        }
+        // if self.package.is_none() {
+        //     return column![text("No package selected")];
+        // }
 
-        let package_lock = self.package.as_ref().unwrap().lock().unwrap();
+        let def_package = &Arc::new(Mutex::new(Package::default()));
+        let package_lock = self.package.as_ref().unwrap_or(def_package).lock().unwrap();
 
         let installed = package_lock
             .get_property("Installed".to_string())
@@ -97,7 +117,7 @@ impl PackageDisplay {
             == "True".to_string();
 
         let install_button = button(if installed { "Uninstall" } else { "Install" })
-            .on_press_maybe(if self.loading == false {
+            .on_press_maybe(if self.loading == false && self.package.is_some() {
                 if installed {
                     Some(AppMessage::PackageViewMessage(
                         PackageViewMessage::Uninstall(self.package.clone().unwrap_or_default()),
@@ -111,18 +131,21 @@ impl PackageDisplay {
                 None
             });
 
-        let update_button = button("Update").on_press_maybe(if self.loading == false {
-            Some(AppMessage::PackageViewMessage(PackageViewMessage::Update(
-                self.package.clone().unwrap_or_default(),
-            )))
-        } else {
-            None
-        });
+        let update_button =
+            button("Update").on_press_maybe(if self.loading == false && self.package.is_some() {
+                Some(AppMessage::PackageViewMessage(PackageViewMessage::Update(
+                    self.package.clone().unwrap_or_default(),
+                )))
+            } else {
+                None
+            });
+
+        let system_update = button("Full Update").on_press(AppMessage::PackageViewMessage(PackageViewMessage::SystemUpdate));
 
         let spinner = if self.loading {
-        	iced::Element::from( iced_aw::Spinner::new() )
+            iced::Element::from(iced_aw::Spinner::new())
         } else {
-        	iced::Element::new(iced::widget::horizontal_space())
+            iced::Element::new(iced::widget::horizontal_space())
         };
 
         return column![
@@ -174,7 +197,7 @@ impl PackageDisplay {
                         .unwrap_or_default()
                 )
             ],
-            row![install_button, update_button, spinner].spacing(10),
+            row![install_button, update_button, system_update, spinner].spacing(10),
         ]
         .spacing(20)
         .width(iced::Length::Fill);
