@@ -57,6 +57,7 @@ impl PackageDisplay {
         match message {
             AppMessage::PackageCardMessage(PackageCardMessage::Selected(p)) => {
                 self.package = Some(p);
+                self.package.as_mut().unwrap().lock().unwrap().sync_all();
                 iced::Task::none()
             }
             AppMessage::PackageViewMessage(m) => match m {
@@ -78,6 +79,7 @@ impl PackageDisplay {
                 }
                 PackageViewMessage::Finished(_, package) => {
                     package.lock().unwrap().sync_installed();
+                    package.lock().unwrap().sync_all();
                     self.loading = false;
                     Task::none()
                 }

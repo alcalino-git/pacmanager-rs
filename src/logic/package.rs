@@ -5,8 +5,6 @@ use chrono::NaiveDateTime;
 #[derive(Debug, Clone, Default)]
 pub struct Package {
     properties: HashMap<String, String>,
-    installed_size: Option<f64>,
-    installed_date: Option<NaiveDateTime>
 }
 
 impl Package {
@@ -33,7 +31,7 @@ impl Package {
                     props.insert(curr_prop, curr_val);
                 }
                 let split = line.find(":").unwrap();
-                let parts = vec![&line[0..split], &line[split+1..]];
+                let parts = vec![&line[0..split], &line[split + 1..]];
                 curr_prop = parts[0].trim().to_string();
                 curr_val = parts[1].trim().to_string();
             } else {
@@ -41,11 +39,29 @@ impl Package {
             }
         }
 
-        return Package { properties: props, ..Default::default() };
+        return Package {
+            properties: props,
+            ..Default::default()
+        };
+    }
+
+    pub fn sync_all(&mut self) {
+        if self.get_property("Installed".to_string()).unwrap() != "True".to_string() {
+            return;
+        }
+        let raw_lines = String::from_utf8(std::process::Command::new("pacman")
+            .arg("-Qi")
+            .arg(self.get_property("Name".to_string()).unwrap())
+            .output()
+            .unwrap()
+            .stdout).unwrap().split("\n").map(|x| x.to_string()).collect::<Vec<String>>();
+        let updated = Self::from_raw(raw_lines);
+        self.properties = updated.properties;
+        self.sync_installed();
     }
 
     pub fn install_or_update(name: String) -> bool {
-    	println!("Attempting to update or install {}", name);
+        println!("Attempting to update or install {}", name);
 
         let payload = format!("pkexec pacman -Syy {} --noconfirm", name);
 
@@ -53,11 +69,11 @@ impl Package {
             .arg("-c")
             .arg(payload)
             .output();
-        return true
+        return true;
     }
 
     pub fn uninstall(name: String) -> bool {
-    	println!("Attempting to uninstall {}", name);
+        println!("Attempting to uninstall {}", name);
 
         let payload = format!("pkexec pacman -R {} --noconfirm", name);
 
@@ -69,37 +85,63 @@ impl Package {
     }
 
     //Makes a call to the OS package manager to sync the in-memory package with the real one
-    pub fn sync_installed(&mut self)  {
-    	let name = self.get_property("Name".to_string()).unwrap_or_default();
-    	println!("Veryfying installation state of {}", name.clone());
+    pub fn sync_installed(&mut self) {
+        let name = self.get_property("Name".to_string()).unwrap_or_default();
+        println!("Veryfying installation state of {}", name.clone());
 
-    	let output = Command::new("pacman").arg("-Q").arg(name.clone()).output().unwrap().status.success();
-     	println!("Recieved state: {}", output);
+        let output = Command::new("pacman")
+            .arg("-Q")
+            .arg(name.clone())
+            .output()
+            .unwrap()
+            .status
+            .success();
+        println!("Recieved state: {}", output);
 
-     	self.set_property("Installed".to_string(), if output {"True".to_string()} else {"False".to_string()});
+        self.set_property(
+            "Installed".to_string(),
+            if output {
+                "True".to_string()
+            } else {
+                "False".to_string()
+            },
+        );
     }
 
     pub fn get_install_size(&mut self) -> f64 {
-    	//if self.installed_size.is_some() {return self.installed_size.unwrap()}
-    	let size_raw = self.get_property("Installed Size".to_string()).unwrap_or_default();
-     	if size_raw.trim().is_empty()  {return 0.0;}
+        //if self.installed_size.is_some() {return self.installed_size.unwrap()}
+        let size_raw = self
+            .get_property("Installed Size".to_string())
+            .unwrap_or_default();
+        if size_raw.trim().is_empty() {
+            return 0.0;
+        }
 
-      	let size_number =  size_raw.trim().split(" ").collect::<Vec<_>>()[0].trim();
-      	let mut size = size_number.parse::<f64>().unwrap_or_default();
-       	if size_raw.contains("MiB") {size *= 1024.0};
+        let size_number = size_raw.trim().split(" ").collect::<Vec<_>>()[0].trim();
+        let mut size = size_number.parse::<f64>().unwrap_or_default();
+        if size_raw.contains("MiB") {
+            size *= 1024.0
+        };
 
-        self.installed_size = Some(size);
+
         return size;
     }
 
-    pub fn get_installed_date(&mut self) -> NaiveDateTime  {
-    	//if self.installed_date.is_some() {return self.installed_date.unwrap()}
-    	let date_raw = self.get_property("Install Date".to_string()).unwrap_or_default();
-     	if date_raw.trim().len() == 0 {return NaiveDateTime::default()}
+    pub fn get_installed_date(&mut self) -> NaiveDateTime {
+        //if self.installed_date.is_some() {return self.installed_date.unwrap()}
+        let date_raw = self
+            .get_property("Install Date".to_string())
+            .unwrap_or_default();
+        if date_raw.trim().len() == 0 {
+            return NaiveDateTime::default();
+        }
 
-      	let naive_dt = chrono::NaiveDateTime::parse_from_str(&date_raw[..date_raw.len()-4], "%a %d %b %Y %I:%M:%S %p").unwrap_or_default();
+        let naive_dt = chrono::NaiveDateTime::parse_from_str(
+            &date_raw[..date_raw.len() - 4],
+            "%a %d %b %Y %I:%M:%S %p",
+        )
+        .unwrap_or_default();
 
-       	self.installed_date = Some(naive_dt);
-       	return naive_dt
+        return naive_dt;
     }
 }

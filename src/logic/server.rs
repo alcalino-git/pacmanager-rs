@@ -110,7 +110,6 @@ impl Server {
 
     pub fn system_update(&mut self) {
     	let _ = std::process::Command::new("sh").arg("-c").arg("pkexec pacman -Syu --noconfirm").output();
-     	self.populate().check_installed();
     }
 }
 
