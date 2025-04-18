@@ -1,3 +1,4 @@
+use iced::task::Handle;
 use iced::Task;
 use iced::widget::{Column, Row, Scrollable, Text, button, column, row, scrollable, text};
 use iced_aw::{SelectionList, Spinner, spinner};
@@ -22,6 +23,7 @@ pub struct SearchWidget {
     pub page: i32,
     pub filter: FilterState,
     pub sorter: SorterState,
+    pub search_handle: Option<Handle>
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Copy)]
@@ -57,11 +59,16 @@ impl SearchWidget {
     }
 
     pub fn handle_search(&self) -> Vec<PackageButton> {
-        let mut packages: Vec<Arc<Mutex<Package>>> = self
-            .server
-            .lock()
-            .unwrap()
-            .search(self.search.clone())
+    	if self.server.is_poisoned() {self.server.clear_poison();}
+
+     	let mut packages = {
+      		let server_lock = self.server.lock().unwrap(); //Lock is aquired
+        	server_lock.search(self.search.clone())
+            //Lock is dropped inmediatly as to avoid deadlocks
+      	};
+      	println!("Succesfully returned to main thread");
+
+        packages = packages
             .into_iter()
             .filter(|x| {match self.filter {
             	FilterState::All => true,
@@ -69,15 +76,19 @@ impl SearchWidget {
               	FilterState::NotInstalled => x.lock().unwrap().get_property("Installed".to_string()).unwrap() != "True".to_string()
             }}).collect();
 
-        packages.sort_by(|a,b| {
-        	match self.sorter {
-         		SorterState::Default => std::cmp::Ordering::Equal,
-           		SorterState::InstallSize => b.lock().unwrap().get_install_size().partial_cmp(&a.lock().unwrap().get_install_size()).unwrap_or(std::cmp::Ordering::Equal),
-             	SorterState::InstallDate => b.lock().unwrap().get_installed_date().cmp(&a.lock().unwrap().get_installed_date()),
-         	}
-        });
+        println!("SUccesfully filtered packages");
+
+       	match self.sorter {
+      		SorterState::Default => {},
+        	SorterState::InstallSize => packages.sort_by_key(|x| x.lock().unwrap().get_install_size() as i32) ,
+           	SorterState::InstallDate => packages.sort_by_key(|x| x.lock().unwrap().get_installed_date()) ,
+       	}
+
+        println!("Sucessfully sorted");
 
         let packages_widgets = packages.into_iter().map(|x| PackageButton { package: x.clone() }).collect();
+
+        println!("Sucessfully generated widgets. Returning");
 
         return packages_widgets
     }
@@ -90,19 +101,25 @@ impl SearchWidget {
                     iced::Task::none()
                 }
                 SearchMessage::SearchSubmited => {
+                	//if self.loading == true {return iced::Task::none()}
+                	if self.search_handle.is_some() {self.search_handle.as_mut().unwrap().abort(); self.search_handle = None;}
                     let this = self.clone();
                     self.loading = true;
                     self.packages.clear();
                     self.page = 0;
                     println!("Search started");
-                    return iced::Task::perform(async move { this.handle_search() }, |p| {
+
+                    let (task, handle) =  iced::Task::abortable(iced::Task::perform(async move { this.handle_search() }, |p| {
                         AppMessage::SearchMessage(SearchMessage::SearchFinished(p))
-                    });
+                    }));
+                    self.search_handle = Some(handle);
+                    return task
                 }
                 SearchMessage::SearchFinished(packages) => {
                     println!("Search finished. Rendering...");
                     self.packages = packages;
                     self.loading = false;
+                    if self.search_handle.is_some() {self.search_handle.as_mut().unwrap().abort(); self.search_handle = None;}
                     iced::Task::none()
                 }
                 SearchMessage::PageUp => {
@@ -182,6 +199,7 @@ impl SearchWidget {
                 button(">").on_press(AppMessage::SearchMessage(SearchMessage::PageUp)),
             ],
             column![row![text("Filter by: "),filter_selector], row![text("Sort by: "), sorter_selector]].spacing(5),
+            text(format!("Found {} package(s)", self.packages.len())),
             packages_display
         ]
         .spacing(10)

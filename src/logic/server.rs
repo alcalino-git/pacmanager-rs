@@ -96,12 +96,14 @@ impl Server {
             .filter(|p| fuzzy_compare(&p.lock().unwrap().get_property("Name".to_string()).unwrap_or_default(), &query) > 0.005 || query.len() == 0)
             .collect::<Vec<_>>();
 
+        //Its best to move this outside the function to avoid deadlocks
         result.sort_by(|a, b| {
         	let a_score = fuzzy_compare(&a.lock().unwrap().get_property("Name".to_string()).unwrap_or_default(), &query);
         	let b_score = fuzzy_compare(&b.lock().unwrap().get_property("Name".to_string()).unwrap_or_default(), &query);
 
          	return b_score.total_cmp(&a_score.clone());
         });
+        println!("Server is done searching and sorting, returning...");
 
         return result;
     }

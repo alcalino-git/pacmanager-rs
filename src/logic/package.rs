@@ -1,11 +1,12 @@
 use std::{cell::RefCell, collections::HashMap, fmt::format, ops::Index, process::{Command, ExitStatus}, rc::Rc};
 
 use chrono::NaiveDateTime;
-use iced::advanced::graphics::text::cosmic_text::rustybuzz::script::COMMON;
 
 #[derive(Debug, Clone, Default)]
 pub struct Package {
     properties: HashMap<String, String>,
+    installed_size: Option<f64>,
+    installed_date: Option<NaiveDateTime>
 }
 
 impl Package {
@@ -40,7 +41,7 @@ impl Package {
             }
         }
 
-        return Package { properties: props };
+        return Package { properties: props, ..Default::default() };
     }
 
     pub fn install_or_update(name: String) -> bool {
@@ -78,25 +79,27 @@ impl Package {
      	self.set_property("Installed".to_string(), if output {"True".to_string()} else {"False".to_string()});
     }
 
-    pub fn get_install_size(&self) -> f32 {
+    pub fn get_install_size(&mut self) -> f64 {
+    	if self.installed_size.is_some() {return self.installed_size.unwrap()}
     	let size_raw = self.get_property("Installed Size".to_string()).unwrap_or_default();
      	if size_raw.trim().is_empty()  {return 0.0;}
 
       	let size_number =  size_raw.trim().split(" ").collect::<Vec<_>>()[0].trim();
-      	let mut size = size_number.parse::<f32>().unwrap_or_default();
+      	let mut size = size_number.parse::<f64>().unwrap_or_default();
        	if size_raw.contains("MiB") {size *= 1024.0};
 
+        self.installed_size = Some(size);
         return size;
     }
 
-    pub fn get_installed_date(&self) -> NaiveDateTime  {
+    pub fn get_installed_date(&mut self) -> NaiveDateTime  {
+    	if self.installed_date.is_some() {return self.installed_date.unwrap()}
     	let date_raw = self.get_property("Install Date".to_string()).unwrap_or_default();
      	if date_raw.trim().len() == 0 {return NaiveDateTime::default()}
 
-      	let naive_dt = chrono::NaiveDateTime::parse_from_str(&date_raw[..date_raw.len()-4], "%a %d %b %Y %I:%M:%S %p").unwrap_or_else(|x| {
-       		println!("Failed to parse: {}", date_raw); return NaiveDateTime::default()
-       	});
+      	let naive_dt = chrono::NaiveDateTime::parse_from_str(&date_raw[..date_raw.len()-4], "%a %d %b %Y %I:%M:%S %p").unwrap_or_default();
 
+       	self.installed_date = Some(naive_dt);
        	return naive_dt
     }
 }
