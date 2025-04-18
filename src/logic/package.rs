@@ -80,7 +80,7 @@ impl Package {
     }
 
     pub fn get_install_size(&mut self) -> f64 {
-    	if self.installed_size.is_some() {return self.installed_size.unwrap()}
+    	//if self.installed_size.is_some() {return self.installed_size.unwrap()}
     	let size_raw = self.get_property("Installed Size".to_string()).unwrap_or_default();
      	if size_raw.trim().is_empty()  {return 0.0;}
 
@@ -93,7 +93,7 @@ impl Package {
     }
 
     pub fn get_installed_date(&mut self) -> NaiveDateTime  {
-    	if self.installed_date.is_some() {return self.installed_date.unwrap()}
+    	//if self.installed_date.is_some() {return self.installed_date.unwrap()}
     	let date_raw = self.get_property("Install Date".to_string()).unwrap_or_default();
      	if date_raw.trim().len() == 0 {return NaiveDateTime::default()}
 

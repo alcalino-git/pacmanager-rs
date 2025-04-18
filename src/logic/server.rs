@@ -87,7 +87,7 @@ impl Server {
     }
 
     pub fn search(&self, query: String) -> Vec<Arc<Mutex<Package>>> {
-    	println!("Querying database against: {}\n Server has {} packages", query, self.packages.keys().len());
+    	println!("Querying database against: \"{}\"\n Server has {} packages", query, self.packages.keys().len());
         let mut result = self
             .packages
             .keys()
@@ -103,7 +103,7 @@ impl Server {
 
          	return b_score.total_cmp(&a_score.clone());
         });
-        println!("Server is done searching and sorting, returning...");
+        //println!("Server is done searching and sorting, returning...");
 
         return result;
     }

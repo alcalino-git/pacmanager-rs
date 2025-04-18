@@ -35,7 +35,7 @@ struct MainUI {
 impl Default for MainUI {
     fn default() -> Self {
         let server = Server::intialized().populate().check_installed();
-        return Self {
+        let val = Self {
             server: Arc::new(Mutex::new(server.clone())),
             search: SearchWidget {
                 server: Arc::new(Mutex::new(server.clone())),
@@ -47,6 +47,7 @@ impl Default for MainUI {
                 loading: false
             },
         };
+        return val;
     }
 }
 

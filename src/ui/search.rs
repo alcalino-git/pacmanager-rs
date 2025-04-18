@@ -3,6 +3,7 @@ use iced::Task;
 use iced::widget::{Column, Row, Scrollable, Text, button, column, row, scrollable, text};
 use iced_aw::{SelectionList, Spinner, spinner};
 use std::cell::RefCell;
+use std::cmp::Reverse;
 use std::process::Command;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
@@ -66,7 +67,7 @@ impl SearchWidget {
         	server_lock.search(self.search.clone())
             //Lock is dropped inmediatly as to avoid deadlocks
       	};
-      	println!("Succesfully returned to main thread");
+     	//println!("Succesfully returned to main thread");
 
         packages = packages
             .into_iter()
@@ -76,19 +77,19 @@ impl SearchWidget {
               	FilterState::NotInstalled => x.lock().unwrap().get_property("Installed".to_string()).unwrap() != "True".to_string()
             }}).collect();
 
-        println!("SUccesfully filtered packages");
+        //println!("SUccesfully filtered packages");
 
        	match self.sorter {
       		SorterState::Default => {},
-        	SorterState::InstallSize => packages.sort_by_key(|x| x.lock().unwrap().get_install_size() as i32) ,
-           	SorterState::InstallDate => packages.sort_by_key(|x| x.lock().unwrap().get_installed_date()) ,
+        	SorterState::InstallSize => packages.sort_by_key(|x| Reverse(x.lock().unwrap().get_install_size() as i32)) ,
+           	SorterState::InstallDate => packages.sort_by_key(|x| Reverse(x.lock().unwrap().get_installed_date())) ,
        	}
 
-        println!("Sucessfully sorted");
+        //println!("Sucessfully sorted");
 
         let packages_widgets = packages.into_iter().map(|x| PackageButton { package: x.clone() }).collect();
 
-        println!("Sucessfully generated widgets. Returning");
+        //println!("Sucessfully generated widgets. Returning");
 
         return packages_widgets
     }
