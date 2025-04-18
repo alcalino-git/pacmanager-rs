@@ -22,7 +22,8 @@ use ui::{
 enum AppMessage {
     SearchMessage(SearchMessage),
     PackageCardMessage(PackageCardMessage),
-    PackageViewMessage(PackageViewMessage)
+    PackageViewMessage(PackageViewMessage),
+    ForceUpdate
 }
 
 #[derive(Clone, Debug)]
@@ -53,8 +54,11 @@ impl Default for MainUI {
 
 impl MainUI {
 	fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
+		let theme_task = iced::Task::perform(async move {
+			theme
+		},  |_| AppMessage::ForceUpdate);
 
-        Task::batch(vec![self.view.update(message.clone()), self.search.update(message.clone())])
+        Task::batch(vec![self.view.update(message.clone()), self.search.update(message.clone()), theme_task])
 
     }
 
@@ -70,5 +74,15 @@ impl MainUI {
 
 fn main() -> iced::Result {
     //TODO: Use mutex instead of RefCell
-    iced::application("Pacmanager", MainUI::update, MainUI::view).run()
+    let app = iced::application("Pacmanager", MainUI::update, MainUI::view).theme(theme);
+
+    app.run()
+}
+
+fn theme(state: &MainUI) -> iced::Theme {
+	match dark_light::detect().unwrap() {
+		dark_light::Mode::Light => iced::Theme::Light,
+		dark_light::Mode::Dark => iced::Theme::Dark,
+		dark_light::Mode::Unspecified => iced::Theme::Light
+	}
 }
