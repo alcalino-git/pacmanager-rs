@@ -9,4 +9,5 @@ chronos = "0.0.0"
 dark-light = "2.0.0"
 iced = {version = "0.13.1", features = ["image"]}
 iced_aw = {version = "0.12.2", features = ["spinner", "badge", "selection_list"]}
+native-dialog = "0.7.0"
 rust-fuzzy-search = "0.1.1"

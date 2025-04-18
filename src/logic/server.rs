@@ -107,6 +107,7 @@ impl Server {
         let pacman_search = String::from_utf8(
             std::process::Command::new("pacman")
                 .arg("-Ss")
+                .arg(query)
                 .output()
                 .unwrap()
                 .stdout,

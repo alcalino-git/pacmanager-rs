@@ -60,7 +60,7 @@ impl Package {
         self.sync_installed();
     }
 
-    pub fn install_or_update(name: String) -> bool {
+    pub fn install_or_update(name: String) -> String {
         println!("Attempting to update or install {}", name);
 
         let payload = format!("pkexec pacman -Syy {} --noconfirm", name);
@@ -69,10 +69,10 @@ impl Package {
             .arg("-c")
             .arg(payload)
             .output();
-        return true;
+        return String::from_utf8(command.unwrap().stderr).unwrap()
     }
 
-    pub fn uninstall(name: String) -> bool {
+    pub fn uninstall(name: String) -> String {
         println!("Attempting to uninstall {}", name);
 
         let payload = format!("pkexec pacman -R {} --noconfirm", name);
@@ -81,7 +81,7 @@ impl Package {
             .arg("-c")
             .arg(payload)
             .output();
-        return true;
+        return String::from_utf8(command.unwrap().stderr).unwrap()
     }
 
     //Makes a call to the OS package manager to sync the in-memory package with the real one
@@ -122,6 +122,9 @@ impl Package {
         if size_raw.contains("MiB") {
             size *= 1024.0
         };
+        if size_raw.contains("GiB") {
+        	size *= 1024.0 * 1024.0
+        }
 
 
         return size;

@@ -18,7 +18,7 @@ pub enum PackageViewMessage {
     Uninstall(Arc<Mutex<Package>>),
     Update(Arc<Mutex<Package>>),
     SystemUpdate,
-    Finished(bool, Arc<Mutex<Package>>),
+    Finished(String, Arc<Mutex<Package>>),
     FinishedSystemUpdate,
 }
 
@@ -30,7 +30,7 @@ pub struct PackageDisplay {
 }
 
 impl PackageDisplay {
-    fn handle_operation(&self, operation: PackageViewMessage) -> bool {
+    fn handle_operation(&self, operation: PackageViewMessage) -> String {
         let package_name = self
             .clone()
             .package
@@ -40,7 +40,7 @@ impl PackageDisplay {
             .get_property("Name".to_string())
             .unwrap_or_default();
         if package_name.len() == 0 {
-            return false;
+            return "".to_string();
         }
         return match operation {
             PackageViewMessage::Install(p) | PackageViewMessage::Update(p) => {
@@ -77,7 +77,10 @@ impl PackageDisplay {
                         },
                     )
                 }
-                PackageViewMessage::Finished(_, package) => {
+                PackageViewMessage::Finished(stderror, package) => {
+                	if stderror.len() != 0 {
+                 		native_dialog::MessageDialog::new().set_text(&stderror).set_title("An error has ocurred :(").show_alert();
+                 	}
                     package.lock().unwrap().sync_installed();
                     package.lock().unwrap().sync_all();
                     self.loading = false;
