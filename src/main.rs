@@ -1,17 +1,13 @@
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 mod logic;
 mod ui;
 
 use iced::{
     Task,
-    widget::{column, row},
+    widget::row,
 };
-use logic::{package::Package, server::Server};
+use logic::server::Server;
 use ui::{
     package_button::PackageCardMessage,
     package_display::{PackageDisplay, PackageViewMessage},

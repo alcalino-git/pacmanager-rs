@@ -1,14 +1,7 @@
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use crate::{AppMessage, logic::package::Package};
-use iced::{
-    Theme,
-    widget::{Row, button, row, text},
-};
+use iced::widget::{button, row};
 use iced_aw::{Badge, style};
 
 #[derive(Clone, Debug)]

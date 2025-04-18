@@ -1,7 +1,7 @@
 use rust_fuzzy_search::fuzzy_compare;
 
 use crate::logic::package::Package;
-use std::{collections::HashMap, process::Command, rc::Rc, sync::{Arc, Mutex}};
+use std::{collections::HashMap, process::Command, sync::{Arc, Mutex}};
 
 #[derive(Debug, Clone, Default)]
 pub struct Server {

@@ -1,14 +1,10 @@
 use iced::task::Handle;
 use iced::Task;
-use iced::widget::{Column, Row, Scrollable, Text, button, column, row, scrollable, text};
-use iced_aw::{SelectionList, Spinner, spinner};
-use std::cell::RefCell;
+use iced::widget::{Column, button, column, row, scrollable, text};
+use iced_aw::Spinner;
 use std::cmp::Reverse;
-use std::process::Command;
-use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
-use crate::logic::package::Package;
 use crate::AppMessage;
 use crate::logic::server::Server;
 use crate::ui::package_button::PackageButton;
@@ -154,8 +150,8 @@ impl SearchWidget {
     pub fn view(&self) -> Column<AppMessage> {
         let packages = scrollable(
             column(
-                self.packages[std::cmp::min((self.page as usize * PAGE_SIZE), self.packages.len())
-                    ..std::cmp::min(((self.page + 1) as usize * PAGE_SIZE), self.packages.len())]
+                self.packages[std::cmp::min(self.page as usize * PAGE_SIZE, self.packages.len())
+                    ..std::cmp::min((self.page + 1) as usize * PAGE_SIZE, self.packages.len())]
                     .to_vec()
                     .clone()
                     .into_iter()

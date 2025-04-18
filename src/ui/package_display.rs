@@ -39,7 +39,7 @@ impl PackageDisplay {
             .unwrap()
             .get_property("Name".to_string())
             .unwrap_or_default();
-        if (package_name.len() == 0) {
+        if package_name.len() == 0 {
             return false;
         }
         return match operation {
