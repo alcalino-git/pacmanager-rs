@@ -1,5 +1,6 @@
-use std::{cell::RefCell, collections::HashMap, fmt::format, process::{Command, ExitStatus}, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::format, ops::Index, process::{Command, ExitStatus}, rc::Rc};
 
+use chrono::NaiveDateTime;
 use iced::advanced::graphics::text::cosmic_text::rustybuzz::script::COMMON;
 
 #[derive(Debug, Clone, Default)]
@@ -30,7 +31,8 @@ impl Package {
                 if curr_prop.len() > 0 {
                     props.insert(curr_prop, curr_val);
                 }
-                let parts = line.trim().split(":").collect::<Vec<_>>();
+                let split = line.find(":").unwrap();
+                let parts = vec![&line[0..split], &line[split+1..]];
                 curr_prop = parts[0].trim().to_string();
                 curr_val = parts[1].trim().to_string();
             } else {
@@ -74,5 +76,27 @@ impl Package {
      	println!("Recieved state: {}", output);
 
      	self.set_property("Installed".to_string(), if output {"True".to_string()} else {"False".to_string()});
+    }
+
+    pub fn get_install_size(&self) -> f32 {
+    	let size_raw = self.get_property("Installed Size".to_string()).unwrap_or_default();
+     	if size_raw.trim().is_empty()  {return 0.0;}
+
+      	let size_number =  size_raw.trim().split(" ").collect::<Vec<_>>()[0].trim();
+      	let mut size = size_number.parse::<f32>().unwrap_or_default();
+       	if size_raw.contains("MiB") {size *= 1024.0};
+
+        return size;
+    }
+
+    pub fn get_installed_date(&self) -> NaiveDateTime  {
+    	let date_raw = self.get_property("Install Date".to_string()).unwrap_or_default();
+     	if date_raw.trim().len() == 0 {return NaiveDateTime::default()}
+
+      	let naive_dt = chrono::NaiveDateTime::parse_from_str(&date_raw[..date_raw.len()-4], "%a %d %b %Y %I:%M:%S %p").unwrap_or_else(|x| {
+       		println!("Failed to parse: {}", date_raw); return NaiveDateTime::default()
+       	});
+
+       	return naive_dt
     }
 }

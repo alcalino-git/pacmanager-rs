@@ -6,6 +6,7 @@ use std::process::Command;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
+use crate::logic::package::Package;
 use crate::AppMessage;
 use crate::logic::server::Server;
 use crate::ui::package_button::PackageButton;
@@ -56,7 +57,7 @@ impl SearchWidget {
     }
 
     pub fn handle_search(&self) -> Vec<PackageButton> {
-        let packages: Vec<PackageButton> = self
+        let mut packages: Vec<Arc<Mutex<Package>>> = self
             .server
             .lock()
             .unwrap()
@@ -66,10 +67,19 @@ impl SearchWidget {
             	FilterState::All => true,
              	FilterState::Installed => x.lock().unwrap().get_property("Installed".to_string()).unwrap() == "True".to_string(),
               	FilterState::NotInstalled => x.lock().unwrap().get_property("Installed".to_string()).unwrap() != "True".to_string()
-            }})
-            .map(|x| PackageButton { package: x.clone() })
-            .collect();
-        return packages;
+            }}).collect();
+
+        packages.sort_by(|a,b| {
+        	match self.sorter {
+         		SorterState::Default => std::cmp::Ordering::Equal,
+           		SorterState::InstallSize => b.lock().unwrap().get_install_size().partial_cmp(&a.lock().unwrap().get_install_size()).unwrap_or(std::cmp::Ordering::Equal),
+             	SorterState::InstallDate => b.lock().unwrap().get_installed_date().cmp(&a.lock().unwrap().get_installed_date()),
+         	}
+        });
+
+        let packages_widgets = packages.into_iter().map(|x| PackageButton { package: x.clone() }).collect();
+
+        return packages_widgets
     }
 
     pub fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
