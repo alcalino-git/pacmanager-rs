@@ -4,8 +4,7 @@ mod logic;
 mod ui;
 
 use iced::{
-    Task,
-    widget::row,
+    widget::row, Application, Task
 };
 use logic::server::Server;
 use ui::{
@@ -72,7 +71,10 @@ fn main() -> iced::Result {
     //TODO: Use mutex instead of RefCell
     let app = iced::application("Pacmanager", MainUI::update, MainUI::view).theme(theme);
 
-    app.run()
+
+    let state = MainUI::default();
+
+    app.run_with( || (state, Task::batch(vec![Task::done(AppMessage::SearchMessage(SearchMessage::SearchSubmited))]) ))
 }
 
 fn theme(state: &MainUI) -> iced::Theme {
