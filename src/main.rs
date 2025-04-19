@@ -76,7 +76,7 @@ fn main() -> iced::Result {
 }
 
 fn theme(state: &MainUI) -> iced::Theme {
-	match dark_light::detect().unwrap() {
+	match dark_light::detect().unwrap_or(dark_light::Mode::Light) {
 		dark_light::Mode::Light => iced::Theme::Light,
 		dark_light::Mode::Dark => iced::Theme::Dark,
 		dark_light::Mode::Unspecified => iced::Theme::Light
